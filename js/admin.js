@@ -69,6 +69,25 @@
     );
   }
 
+  async function refreshProtectedUi() {
+    const protectedContent = byId("protectedContent");
+    const lockedInfo = byId("authLockedInfo");
+    if (!protectedContent || !lockedInfo || !window.CMS_API) {
+      return;
+    }
+
+    if (!window.CMS_API.isSupabaseEnabled()) {
+      protectedContent.classList.remove("is-hidden");
+      lockedInfo.classList.add("is-hidden");
+      return;
+    }
+
+    const session = await window.CMS_API.getSession();
+    const isLoggedIn = Boolean(session);
+    protectedContent.classList.toggle("is-hidden", !isLoggedIn);
+    lockedInfo.classList.toggle("is-hidden", isLoggedIn);
+  }
+
   function linesToArray(value) {
     return value
       .split("\n")
@@ -481,6 +500,7 @@
         }
         await window.CMS_API.login(email, password);
         await updateSupabaseAuthStatus();
+        await refreshProtectedUi();
         setStatus("Connexion Supabase reussie.");
       } catch (error) {
         setStatus(error.message || "Echec de connexion Supabase.", true);
@@ -491,6 +511,7 @@
       try {
         await window.CMS_API.logout();
         await updateSupabaseAuthStatus();
+        await refreshProtectedUi();
         setStatus("Deconnexion Supabase effectuee.");
       } catch (error) {
         setStatus(error.message || "Echec de deconnexion.", true);
@@ -500,7 +521,13 @@
     reloadButton.addEventListener("click", async () => {
       const content = await loadContent();
       renderEditors(content);
+      await refreshProtectedUi();
       setStatus("Contenu recharge depuis la source configuree.");
+    });
+
+    byId("storageProvider").addEventListener("change", async () => {
+      await refreshProtectedUi();
+      await updateSupabaseAuthStatus();
     });
   }
 
@@ -585,6 +612,7 @@
     setupButtons();
     setupSupabaseAuth();
     await updateSupabaseAuthStatus();
+    await refreshProtectedUi();
   }
 
   init();

@@ -86,6 +86,16 @@ body {
   font-weight: 600;
 }
 
+.auth-locked-note {
+  border-style: dashed;
+  border-color: #cddcf7;
+  background: #f7faff;
+}
+
+.is-hidden {
+  display: none !important;
+}
+
 .panel-head {
   display: flex;
   align-items: center;
