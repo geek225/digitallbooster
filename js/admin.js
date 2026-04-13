@@ -13,7 +13,11 @@
     }
   }
 
-  function loadContent() {
+  async function loadContent() {
+    if (window.CMS_API) {
+      const loaded = await window.CMS_API.loadContent(cloneDefault());
+      return mergeContent(loaded);
+    }
     const raw = localStorage.getItem(window.DIGITALL_STORAGE_KEY);
     if (!raw) {
       return cloneDefault();
@@ -21,7 +25,11 @@
     return mergeContent(parseJson(raw));
   }
 
-  function saveContent(content) {
+  async function saveContent(content) {
+    if (window.CMS_API) {
+      await window.CMS_API.saveContent(content);
+      return;
+    }
     localStorage.setItem(window.DIGITALL_STORAGE_KEY, JSON.stringify(content, null, 2));
   }
 
@@ -33,6 +41,21 @@
     const status = byId("status");
     status.textContent = text;
     status.style.color = isError ? "#b3261e" : "#284b73";
+  }
+
+  async function updateSupabaseAuthStatus() {
+    const node = byId("supabaseAuthStatus");
+    if (!node) {
+      return;
+    }
+    if (!window.CMS_API || !window.CMS_API.isSupabaseEnabled()) {
+      node.textContent = "Mode local actif. Configure data/cms-config.js et provider=supabase pour le mode global.";
+      return;
+    }
+    const session = await window.CMS_API.getSession();
+    node.textContent = session?.user?.email
+      ? `Connecte sur Supabase: ${session.user.email}`
+      : "Non connecte sur Supabase.";
   }
 
   function linesToArray(value) {
@@ -429,6 +452,43 @@
     });
   }
 
+  function setupSupabaseAuth() {
+    const loginButton = byId("supabaseLoginButton");
+    const logoutButton = byId("supabaseLogoutButton");
+    const reloadButton = byId("reloadRemoteButton");
+    if (!loginButton || !logoutButton || !reloadButton || !window.CMS_API) {
+      return;
+    }
+
+    loginButton.addEventListener("click", async () => {
+      try {
+        const email = byId("supabaseEmail").value.trim();
+        const password = byId("supabasePassword").value;
+        if (!email || !password) {
+          setStatus("Renseigne email et mot de passe Supabase.", true);
+          return;
+        }
+        await window.CMS_API.login(email, password);
+        await updateSupabaseAuthStatus();
+        setStatus("Connexion Supabase reussie.");
+      } catch (error) {
+        setStatus(error.message || "Echec de connexion Supabase.", true);
+      }
+    });
+
+    logoutButton.addEventListener("click", async () => {
+      await window.CMS_API.logout();
+      await updateSupabaseAuthStatus();
+      setStatus("Deconnexion Supabase effectuee.");
+    });
+
+    reloadButton.addEventListener("click", async () => {
+      const content = await loadContent();
+      renderEditors(content);
+      setStatus("Contenu recharge depuis la source configuree.");
+    });
+  }
+
   function downloadJson(content) {
     const blob = new Blob([JSON.stringify(content, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -452,15 +512,15 @@
       addStepEditor(host, { step: "", description: "" }, count);
     });
 
-    byId("saveButton").addEventListener("click", () => {
+    byId("saveButton").addEventListener("click", async () => {
       const payload = mergeContent(collectFormContent());
-      saveContent(payload);
+      await saveContent(payload);
       setStatus("Sauvegarde effectuee. Rechargez la landing page pour voir les changements.");
     });
 
-    byId("resetButton").addEventListener("click", () => {
+    byId("resetButton").addEventListener("click", async () => {
       const defaults = cloneDefault();
-      saveContent(defaults);
+      await saveContent(defaults);
       renderEditors(defaults);
       setStatus("Contenu reinitialise avec les valeurs par defaut.");
     });
@@ -484,15 +544,21 @@
       }
       const parsed = mergeContent(parsedRaw);
 
-      saveContent(parsed);
+      await saveContent(parsed);
       renderEditors(parsed);
       setStatus("Import termine et contenu charge.");
     });
   }
 
-  const content = loadContent();
-  renderEditors(content);
-  bindDynamicDelete();
-  bindMediaUploads();
-  setupButtons();
+  async function init() {
+    const content = await loadContent();
+    renderEditors(content);
+    bindDynamicDelete();
+    bindMediaUploads();
+    setupButtons();
+    setupSupabaseAuth();
+    await updateSupabaseAuthStatus();
+  }
+
+  init();
 })();

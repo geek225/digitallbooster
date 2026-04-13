@@ -53,7 +53,11 @@
     return merged;
   }
 
-  function getContent() {
+  async function getContent() {
+    if (window.CMS_API) {
+      const loaded = await window.CMS_API.loadContent(window.DIGITALL_DEFAULT_CONTENT);
+      return mergeContent(loaded);
+    }
     const raw = localStorage.getItem(window.DIGITALL_STORAGE_KEY);
     if (!raw) {
       return structuredClone(window.DIGITALL_DEFAULT_CONTENT);
@@ -244,12 +248,16 @@
     fillImage("illustrationImage3", content.illustrations[2]);
   }
 
-  const content = getContent();
-  applyTheme(content);
-  applyBranding(content);
-  applyNavigation(content);
-  renderHero(content);
-  renderServices(content);
-  renderIllustrations(content);
-  renderContact(content);
+  async function init() {
+    const content = await getContent();
+    applyTheme(content);
+    applyBranding(content);
+    applyNavigation(content);
+    renderHero(content);
+    renderServices(content);
+    renderIllustrations(content);
+    renderContact(content);
+  }
+
+  init();
 })();

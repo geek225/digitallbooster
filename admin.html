@@ -38,6 +38,20 @@
       </section>
 
       <section class="panel">
+        <h2>Admin Supabase (V4 Global)</h2>
+        <div class="grid-2">
+          <label>Email admin <input id="supabaseEmail" type="email" /></label>
+          <label>Mot de passe <input id="supabasePassword" type="password" /></label>
+        </div>
+        <div class="actions">
+          <button id="supabaseLoginButton" class="btn btn-primary" type="button">Connexion Supabase</button>
+          <button id="supabaseLogoutButton" class="btn" type="button">Deconnexion</button>
+          <button id="reloadRemoteButton" class="btn" type="button">Recharger depuis la base</button>
+        </div>
+        <p id="supabaseAuthStatus" class="status"></p>
+      </section>
+
+      <section class="panel">
         <h2>Branding & Menus</h2>
         <div class="grid-2">
           <label>Nom de marque <input id="brandName" type="text" /></label>
@@ -160,7 +174,10 @@
       <p id="status" class="status" role="status" aria-live="polite"></p>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./data/cms-config.js"></script>
     <script src="./data/content-default.js"></script>
+    <script src="./js/cms-api.js"></script>
     <script src="./js/admin.js"></script>
   </body>
 </html>
